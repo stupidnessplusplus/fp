@@ -197,3 +197,21 @@ FakesAssemblies/
 *.opt
 
 *Solved.cs
+
+!TagsCloudApp_Tests/[Bb]in/
+TagsCloudApp_Tests/[Bb]in/*
+!TagsCloudApp_Tests/[Bb]in/[Dd]ebug/
+TagsCloudApp_Tests/[Bb]in/[Dd]ebug/*
+!TagsCloudApp_Tests/[Bb]in/[Dd]ebug/net8.0-windows/
+TagsCloudApp_Tests/[Bb]in/[Dd]ebug/net8.0-windows/*
+!TagsCloudApp_Tests/[Bb]in/[Dd]ebug/net8.0-windows/expected/
+
+
+!TagsCloudConsoleInterface/[Bb]in/
+TagsCloudConsoleInterface/[Bb]in/*
+!TagsCloudConsoleInterface/[Bb]in/[Dd]ebug/
+TagsCloudConsoleInterface/[Bb]in/[Dd]ebug/*
+!TagsCloudConsoleInterface/[Bb]in/[Dd]ebug/net8.0-windows/
+TagsCloudConsoleInterface/[Bb]in/[Dd]ebug/net8.0-windows/*
+!TagsCloudConsoleInterface/[Bb]in/[Dd]ebug/net8.0-windows/in.txt
+!TagsCloudConsoleInterface/[Bb]in/[Dd]ebug/net8.0-windows/exclude.txt
