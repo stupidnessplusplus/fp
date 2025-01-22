@@ -1,31 +1,51 @@
-﻿using MystemSharp;
+﻿using FluentResults;
+using Microsoft.Extensions.Logging;
+using MystemSharp;
 using WordsFiltration.Configs;
 
 namespace WordsFiltration.WordsSelectors;
 
 public class PartsOfSpeechFilter : IWordsSelector
 {
-    private readonly IWordsSelectionConfig wordsSelectionConfig;
+    private readonly WordsSelectionConfig wordsSelectionConfig;
 
-    public PartsOfSpeechFilter(IWordsSelectionConfig wordsSelectionConfig)
+    public PartsOfSpeechFilter(WordsSelectionConfig wordsSelectionConfig)
     {
         ArgumentNullException.ThrowIfNull(wordsSelectionConfig);
 
         this.wordsSelectionConfig = wordsSelectionConfig;
     }
 
-    public IEnumerable<string> Select(IEnumerable<string> words)
+    public Result<IEnumerable<string>> Select(IEnumerable<string> words)
     {
-        ArgumentNullException.ThrowIfNull(words);
+        if (words == null)
+        {
+            return Result
+                .Fail("Words collection is null.");
+        }
 
         var includedPartsOfSpeech = wordsSelectionConfig.IncludedPartsOfSpeech?.ToHashSet();
 
         if (includedPartsOfSpeech == null)
         {
-            return words;
+            return words
+                .ToResult()
+                .WithSuccess("Continuing without filtering words by parts of speech.");
         }
 
-        return words.Where(word => includedPartsOfSpeech.Contains(GetPartOfSpeech(word)));
+        return words
+            .Select(word => (
+                Word: word,
+                POS: Result
+                    .Try(() => GetPartOfSpeech(word))
+                    .LogIfFailed(
+                        nameof(PartsOfSpeechFilter),
+                        $"Unable to determine the part of speech of the word '{word}'.",
+                        LogLevel.Warning)))
+            .Where(x => x.POS.IsSuccess && includedPartsOfSpeech.Contains(x.POS.Value))
+            .Select(x => x.Word)
+            .ToResult()
+            .WithSuccess($"Words were filtered by parts of speech: [{string.Join(", ", includedPartsOfSpeech)}].");
     }
 
     private PartOfSpeech GetPartOfSpeech(string word)

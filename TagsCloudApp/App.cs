@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using FluentResults;
 using RectanglesCloudPositioning;
 using RectanglesCloudPositioning.Configs;
 using System.Drawing;
@@ -25,21 +26,21 @@ public class App
         this.writeImage = writeImage;
     }
 
-    public void Run(
-        IDrawingAlgorithmsConfig algorithmsConfig,
-        IWordsSelectionConfig wordsSelectionConfig,
-        IWordSizesGetterConfig wordSizesGetterConfig,
-        IRectanglesPositioningConfig rectanglesPositioningConfig,
-        ITagsColorConfig colorConfig,
-        ITagsFontConfig fontConfig)
+    public Result Run(
+        DrawingAlgorithmsConfig algorithmsConfig,
+        WordsSelectionConfig wordsSelectionConfig,
+        WordSizesGetterConfig wordSizesGetterConfig,
+        RectanglesPositioningConfig rectanglesPositioningConfig,
+        TagsColorConfig colorConfig,
+        TagsFontConfig fontConfig)
     {
         var builder = new ContainerBuilder();
 
-        builder.RegisterInstance(wordsSelectionConfig).As<IWordsSelectionConfig>().SingleInstance();
-        builder.RegisterInstance(wordSizesGetterConfig).As<IWordSizesGetterConfig>().SingleInstance();
-        builder.RegisterInstance(rectanglesPositioningConfig).As<IRectanglesPositioningConfig>().SingleInstance();
-        builder.RegisterInstance(colorConfig).As<ITagsColorConfig>().SingleInstance();
-        builder.RegisterInstance(fontConfig).As<ITagsFontConfig>().SingleInstance();
+        builder.RegisterInstance(wordsSelectionConfig).As<WordsSelectionConfig>().SingleInstance();
+        builder.RegisterInstance(wordSizesGetterConfig).As<WordSizesGetterConfig>().SingleInstance();
+        builder.RegisterInstance(rectanglesPositioningConfig).As<RectanglesPositioningConfig>().SingleInstance();
+        builder.RegisterInstance(colorConfig).As<TagsColorConfig>().SingleInstance();
+        builder.RegisterInstance(fontConfig).As<TagsFontConfig>().SingleInstance();
 
         builder.RegisterType<WordsStemmer>().As<IWordsSelector>().SingleInstance();
         builder.RegisterType<PartsOfSpeechFilter>().As<IWordsSelector>().SingleInstance();
@@ -54,22 +55,24 @@ public class App
         var tagsCloudCreator = container.Resolve<TagsCloudCreator>();
         var textSplitter = container.Resolve<TextSplitter>();
 
-        Run(textSplitter, tagsCloudCreator);
+        return Run(textSplitter, tagsCloudCreator);
     }
 
-    private void Run(
+    private Result Run(
         TextSplitter textSplitter,
         TagsCloudCreator tagsCloudCreator)
     {
-        var text = readText();
-        var words = textSplitter.SplitToWords(text);
-        var image = tagsCloudCreator.DrawTagsCloud(words);
-        writeImage(image);
+        return Result
+            .Try(readText)
+            .Bind(textSplitter.SplitToWords)
+            .Bind(tagsCloudCreator.DrawTagsCloud)
+            .Bind(image => Result
+                .Try(() => writeImage(image)));
     }
 
     private void RegisterDrawingAlgorithms(
         ContainerBuilder builder,
-        IDrawingAlgorithmsConfig config)
+        DrawingAlgorithmsConfig config)
     {
         builder.RegisterType(config.RectanglesLayouterType).As<ICloudLayouter>().SingleInstance();
         builder.RegisterType(config.WordSizesGetterType).As<IWordSizesGetter>().SingleInstance();
@@ -77,7 +80,7 @@ public class App
         builder.RegisterType<SingleSolidColorTagsDecorator>().As<ITagsDrawingDecorator>().SingleInstance();
         builder.RegisterType<SingleFontTagsDecorator>().As<ITagsDrawingDecorator>().SingleInstance();
 
-        foreach (var type in config.AdditionalSettingsSetterTypes)
+        foreach (var type in config.TagsDecoratorTypes)
         {
             builder.RegisterType(type).As<ITagsDrawingDecorator>().SingleInstance();
         }

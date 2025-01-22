@@ -11,14 +11,12 @@ internal class SingleSolidColorTagsDecoratorTests : TagsDrawingDecoratorTests
 {
     private static readonly Color configMainColor = Color.FromArgb(0, 0, 0);
 
-    private ITagsColorConfig tagsColorConfig;
+    private TagsColorConfig tagsColorConfig;
 
     [SetUp]
     public void SetUp()
     {
-        tagsColorConfig = A.Fake<ITagsColorConfig>();
-        A.CallTo(() => tagsColorConfig.MainColor).Returns(configMainColor);
-
+        tagsColorConfig = new TagsColorConfig(configMainColor, default, default);
         tagsDecorator = new SingleSolidColorTagsDecorator(tagsColorConfig);
     }
 
@@ -37,6 +35,7 @@ internal class SingleSolidColorTagsDecoratorTests : TagsDrawingDecoratorTests
 
         var decoratedTags = tagsDecorator.Decorate(tags);
 
-        decoratedTags.Should().BeEquivalentTo(expectedTags);
+        decoratedTags.IsSuccess.Should().BeTrue();
+        decoratedTags.Value.Should().BeEquivalentTo(expectedTags);
     }
 }

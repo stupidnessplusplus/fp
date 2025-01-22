@@ -1,5 +1,5 @@
-﻿using FakeItEasy;
-using FluentAssertions;
+﻿using FluentAssertions;
+using FluentResults;
 using System.Drawing;
 using TagsCloudCreation.Configs;
 using TagsCloudCreation.TagsDrawers;
@@ -11,16 +11,25 @@ internal class TagsDrawerTests
 {
     private static readonly Color backgroundColor = Color.FromArgb(255, 255, 255);
 
-    private ITagsColorConfig tagsColorConfig;
+    private TagsColorConfig tagsColorConfig;
     private ITagsDrawer tagsDrawer;
+
+    private Result<Bitmap>? imageResult;
 
     [SetUp]
     public void SetUp()
     {
-        tagsColorConfig = A.Fake<ITagsColorConfig>();
-        A.CallTo(() => tagsColorConfig.BackgroundColor).Returns(backgroundColor);
-
+        tagsColorConfig = new TagsColorConfig(default, default, backgroundColor);
         tagsDrawer = new TagsDrawer(tagsColorConfig);
+    }
+
+    [TearDown]
+    public void TearDown()
+    {
+        if (imageResult != null && imageResult.IsSuccess)
+        {
+            imageResult.Value?.Dispose();
+        }
     }
 
     [Test]
@@ -31,10 +40,10 @@ internal class TagsDrawerTests
     }
 
     [Test]
-    public void Draw_ThrowsException_WhenTagsListIsNull()
+    public void Draw_Fails_WhenTagsListIsNull()
     {
-        var decorate = () => tagsDrawer.Draw(null!);
-        decorate.Should().Throw<ArgumentNullException>();
+        imageResult = tagsDrawer.Draw(null!);
+        imageResult.IsSuccess.Should().BeFalse();
     }
 
     [Test]
@@ -42,16 +51,18 @@ internal class TagsDrawerTests
     {
         var expectedSize = new Size(1, 1);
 
-        using var image = tagsDrawer.Draw([]);
+        imageResult = tagsDrawer.Draw([]);
 
-        image.Size.Should().Be(expectedSize);
+        imageResult.IsSuccess.Should().BeTrue();
+        imageResult.Value.Size.Should().Be(expectedSize);
     }
 
     [Test]
     public void Draw_SetsImageBackgroundColor()
     {
-        using var image = tagsDrawer.Draw([]);
+        imageResult = tagsDrawer.Draw([]);
 
-        image.GetPixel(0, 0).Should().Be(backgroundColor);
+        imageResult.IsSuccess.Should().BeTrue();
+        imageResult.Value.GetPixel(0, 0).Should().Be(backgroundColor);
     }
 }

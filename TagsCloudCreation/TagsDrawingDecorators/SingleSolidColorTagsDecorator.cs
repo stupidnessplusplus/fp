@@ -1,25 +1,31 @@
-﻿using System.Drawing;
+﻿using FluentResults;
+using System.Drawing;
 using TagsCloudCreation.Configs;
 
 namespace TagsCloudCreation.TagsDrawingDecorators;
 
 public class SingleSolidColorTagsDecorator : ITagsDrawingDecorator
 {
-    private readonly ITagsColorConfig colorConfig;
+    private readonly TagsColorConfig colorConfig;
 
-    public SingleSolidColorTagsDecorator(ITagsColorConfig colorConfig)
+    public SingleSolidColorTagsDecorator(TagsColorConfig colorConfig)
     {
         ArgumentNullException.ThrowIfNull(colorConfig);
 
         this.colorConfig = colorConfig;
     }
 
-    public TagDrawing[] Decorate(IList<TagDrawing> tags)
+    public Result<TagDrawing[]> Decorate(IList<TagDrawing> tags)
     {
-        ArgumentNullException.ThrowIfNull(tags);
-        
+        if (tags == null)
+        {
+            return Result.Fail("Tags collection is null.");
+        }
+
         return tags
             .Select(tag => tag with { Color = colorConfig.MainColor })
-            .ToArray();
+            .ToArray()
+            .ToResult()
+            .WithSuccess($"Colored tags with {colorConfig.MainColor}.");
     }
 }

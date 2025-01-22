@@ -3,6 +3,8 @@ using TagsCloudCreation.WordSizesGetters;
 using TagsCloudCreation.TagsDrawingDecorators;
 using TagsCloudCreation.TagsDrawers;
 using RectanglesCloudPositioning;
+using FluentResults;
+using Microsoft.Extensions.Logging;
 
 namespace TagsCloudCreation;
 
@@ -30,26 +32,47 @@ public class TagsCloudCreator
         this.tagsDrawer = tagsDrawer;
     }
 
-    public Bitmap DrawTagsCloud(IList<string> words)
+    public Result<Bitmap> DrawTagsCloud(IList<string> words)
     {
-        ArgumentNullException.ThrowIfNull(words);
-
-        var tags = wordSizesGetter
-            .GetSizes(words)
-            .Select(unplacedTag => new Tag(unplacedTag.Word, cloudLayouter.PutNextRectangle(unplacedTag.Size)))
-            .ToArray();
-
-        var tagDrawings = GetTagDrawings(tags);
-        return tagsDrawer.Draw(tagDrawings);
+        return Result
+            .FailIf(words == null, new Error("Words collection is null."))
+            .LogIfFailed(nameof(TagsCloudCreator), null, LogLevel.Error)
+            .Bind(() => wordSizesGetter.GetSizes(words!))
+            .Bind(unplacedTags => unplacedTags
+                .Select(unplacedTag => cloudLayouter
+                    .PutNextRectangle(unplacedTag.Size)
+                    .LogIfFailed(LogLevel.Warning)
+                    .Bind(rectangle => Result.Ok(new Tag(unplacedTag.Word, rectangle))))
+                .Where(putResult => putResult.IsSuccess)
+                .Select(putResult => putResult.Value)
+                .ToArray()
+                .ToResult()
+                .Log(nameof(TagsCloudCreator), "Placed tags.", LogLevel.Information))
+            .Bind(GetTagDrawings)
+            .Bind(tagsDrawer.Draw);
     }
 
-    private TagDrawing[] GetTagDrawings(IList<Tag> tags)
+    private Result<TagDrawing[]> GetTagDrawings(IList<Tag> tags)
     {
-        var tagDrawings = tags
+        var tagDrawingsResult = tags
             .Select(tag => new TagDrawing(tag))
-            .ToArray();
+            .ToArray()
+            .ToResult();
 
-        return tagsSettingsSetters
-            .Aggregate(tagDrawings, (tags, setter) => setter.Decorate(tags));
+        foreach (var tagsSettingsSetter in tagsSettingsSetters)
+        {
+            var tagsSettingsSetterName = tagsSettingsSetter.GetType().Name;
+            tagDrawingsResult = tagsSettingsSetter
+                .Decorate(tagDrawingsResult.Value)
+                .LogIfSuccess(tagsSettingsSetterName, null, LogLevel.Information)
+                .LogIfFailed(tagsSettingsSetterName, null, LogLevel.Error);
+
+            if (tagDrawingsResult.IsFailed)
+            {
+                return Result.Fail("Unable to apply settings to tags.");
+            }
+        }
+
+        return Result.Ok(tagDrawingsResult.Value);
     }
 }

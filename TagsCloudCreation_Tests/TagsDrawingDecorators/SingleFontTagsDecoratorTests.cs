@@ -12,15 +12,12 @@ internal class SingleFontTagsDecoratorTests : TagsDrawingDecoratorTests
     private const string ConfigFontName = "Arial";
     private const FontStyle ConfigFontStyle = FontStyle.Regular;
 
-    private ITagsFontConfig tagsFontConfig;
+    private TagsFontConfig tagsFontConfig;
 
     [SetUp]
     public void SetUp()
     {
-        tagsFontConfig = A.Fake<ITagsFontConfig>();
-        A.CallTo(() => tagsFontConfig.FontName).Returns(ConfigFontName);
-        A.CallTo(() => tagsFontConfig.FontStyle).Returns(ConfigFontStyle);
-
+        tagsFontConfig = new TagsFontConfig(ConfigFontName, ConfigFontStyle);
         tagsDecorator = new SingleFontTagsDecorator(tagsFontConfig);
     }
 
@@ -43,6 +40,7 @@ internal class SingleFontTagsDecoratorTests : TagsDrawingDecoratorTests
 
         var decoratedTags = tagsDecorator.Decorate(tags);
 
-        decoratedTags.Should().BeEquivalentTo(expectedTags);
+        decoratedTags.IsSuccess.Should().BeTrue();
+        decoratedTags.Value.Should().BeEquivalentTo(expectedTags);
     }
 }

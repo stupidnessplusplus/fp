@@ -1,5 +1,4 @@
-﻿using FakeItEasy;
-using FluentAssertions;
+﻿using FluentAssertions;
 using System.Drawing;
 using TagsCloudCreation.Configs;
 using TagsCloudCreation.WordSizesGetters;
@@ -14,27 +13,22 @@ internal abstract class WordSizesGetterTests
     protected const string ConfigFontName = "Arial";
     protected const FontStyle ConfigFontStyle = FontStyle.Regular;
 
-    protected ITagsFontConfig tagsFontConfig;
-    protected IWordSizesGetterConfig wordSizesGetterConfig;
+    protected TagsFontConfig tagsFontConfig;
+    protected WordSizesGetterConfig wordSizesGetterConfig;
     protected FrequencyProportionalWordSizesGetter wordSizesGetter = null!;
 
     [SetUp]
     public virtual void SetUp()
     {
-        wordSizesGetterConfig = A.Fake<IWordSizesGetterConfig>();
-        A.CallTo(() => wordSizesGetterConfig.MinSize).Returns(ConfigMinSize);
-        A.CallTo(() => wordSizesGetterConfig.Scale).Returns(ConfigScale);
-
-        tagsFontConfig = A.Fake<ITagsFontConfig>();
-        A.CallTo(() => tagsFontConfig.FontName).Returns(ConfigFontName);
-        A.CallTo(() => tagsFontConfig.FontStyle).Returns(ConfigFontStyle);
+        wordSizesGetterConfig = new WordSizesGetterConfig(ConfigMinSize, ConfigScale);
+        tagsFontConfig = new TagsFontConfig(ConfigFontName, ConfigFontStyle);
     }
 
     [Test]
-    public void GetSizes_ThrowsException_WhenWordsListIsNull()
+    public void GetSizes_Fails_WhenWordsListIsNull()
     {
-        var getSizes = () => wordSizesGetter.GetSizes(null!);
-        getSizes.Should().Throw<ArgumentNullException>();
+        var unplacedTagsResult = wordSizesGetter.GetSizes(null!);
+        unplacedTagsResult.IsSuccess.Should().BeFalse();
     }
 
     [Test]
@@ -42,9 +36,10 @@ internal abstract class WordSizesGetterTests
     {
         var words = new[] { "a" };
 
-        var unplacedTags = wordSizesGetter.GetSizes(words);
+        var unplacedTagsResult = wordSizesGetter.GetSizes(words);
 
-        unplacedTags.Should().HaveCount(1);
-        unplacedTags[0].Size.Height.Should().Be(ConfigMinSize);
+        unplacedTagsResult.IsSuccess.Should().BeTrue();
+        unplacedTagsResult.Value.Should().HaveCount(1);
+        unplacedTagsResult.Value[0].Size.Height.Should().Be(ConfigMinSize);
     }
 }

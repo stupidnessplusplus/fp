@@ -1,5 +1,4 @@
-﻿using FakeItEasy;
-using FluentAssertions;
+﻿using FluentAssertions;
 using TagsCloudCreation.WordSizesGetters;
 
 namespace TagsCloudCreation_Tests.WordSizesGetters;
@@ -34,14 +33,16 @@ internal class SmoothFrequencyProportionalWordSizesGetterTests : WordSizesGetter
     public void GetSizes_ReturnsTags_WithHeightsIncreasedByWordFrequencyPlacement(double scale)
     {
         var words = new[] { "a", "b", "b", "c", "c", "d", "d", "d", "d" };
-        A.CallTo(() => wordSizesGetterConfig.Scale).Returns(scale);
+        wordSizesGetterConfig = wordSizesGetterConfig with { Scale = scale };
+        wordSizesGetter = new SmoothFrequencyProportionalWordSizesGetter(wordSizesGetterConfig, tagsFontConfig);
 
-        var unplacedTags = wordSizesGetter.GetSizes(words);
-        var aTag = unplacedTags.Single(tag => tag.Word == "a");
-        var bTag = unplacedTags.Single(tag => tag.Word == "b");
-        var cTag = unplacedTags.Single(tag => tag.Word == "c");
-        var dTag = unplacedTags.Single(tag => tag.Word == "d");
+        var unplacedTagsResult = wordSizesGetter.GetSizes(words);
+        unplacedTagsResult.IsSuccess.Should().BeTrue();
 
+        var aTag = unplacedTagsResult.Value.Single(tag => tag.Word == "a");
+        var bTag = unplacedTagsResult.Value.Single(tag => tag.Word == "b");
+        var cTag = unplacedTagsResult.Value.Single(tag => tag.Word == "c");
+        var dTag = unplacedTagsResult.Value.Single(tag => tag.Word == "d");
         aTag.Size.Height.Should().Be(ConfigMinSize + (int)(0 * scale));
         bTag.Size.Height.Should().Be(ConfigMinSize + (int)(1 * scale));
         cTag.Size.Height.Should().Be(ConfigMinSize + (int)(1 * scale));
@@ -53,9 +54,10 @@ internal class SmoothFrequencyProportionalWordSizesGetterTests : WordSizesGetter
     {
         var words = new[] { "d", "a", "c", "c", "b", "d", "b", "d", "d" };
 
-        var unplacedTags = wordSizesGetter.GetSizes(words);
-        var actualHeights = unplacedTags.Select(tag => tag.Size.Height);
+        var unplacedTagsResult = wordSizesGetter.GetSizes(words);
+        unplacedTagsResult.IsSuccess.Should().BeTrue();
 
+        var actualHeights = unplacedTagsResult.Value.Select(tag => tag.Size.Height);
         actualHeights.Should().BeInDescendingOrder();
     }
 }

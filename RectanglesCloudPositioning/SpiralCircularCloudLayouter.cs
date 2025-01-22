@@ -14,7 +14,7 @@ public class SpiralCircularCloudLayouter : ICloudLayouter
     private IEnumerator<(Point Point, Direction Direction)> pointsEnumerator;
     private int radius;
 
-    public SpiralCircularCloudLayouter(IRectanglesPositioningConfig config)
+    public SpiralCircularCloudLayouter(RectanglesPositioningConfig config)
         : this(config.Center, config.RaysCount)
     {
     }
@@ -28,11 +28,8 @@ public class SpiralCircularCloudLayouter : ICloudLayouter
             .GetEnumerator();
     }
 
-    public Rectangle PutNextRectangle(Size rectangleSize)
+    Rectangle ICloudLayouter.PutNextRectangleOrThrow(Size rectangleSize)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rectangleSize.Width);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rectangleSize.Height);
-
         var rectangle = GetRectangleToPut(rectangleSize);
         rectangles.Add(rectangle);
         return rectangle;
@@ -64,14 +61,14 @@ public class SpiralCircularCloudLayouter : ICloudLayouter
         var wideRectangle = direction is Direction.Left or Direction.Right
             ? new Rectangle(new Point(rectangle.X, int.MinValue / 2), new Size(rectangle.Width, int.MaxValue))
             : new Rectangle(new Point(int.MinValue / 2, rectangle.Y), new Size(int.MaxValue, rectangle.Height));
-        
+
         if (rectangles.HasIntersection(wideRectangle, direction, directionIndices[direction], out var intersectionIndex))
         {
             directionIndices[direction] = intersectionIndex;
 
             return !rectangles.HasIntersection(rectangle, direction, intersectionIndex, out _);
         }
-        
+
         return true;
     }
 

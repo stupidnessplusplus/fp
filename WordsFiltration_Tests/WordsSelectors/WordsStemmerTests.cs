@@ -16,7 +16,8 @@ internal class WordsStemmerTests : WordsSelectorTests
     {
         var actualWords = wordSelector.Select([word]);
 
-        actualWords.Should().BeEquivalentTo(expectedWord);
+        actualWords.IsSuccess.Should().BeTrue();
+        actualWords.Value.Should().BeEquivalentTo(expectedWord);
     }
 
     private static IEnumerable<TestCaseData> GetWordsStemTestCases()

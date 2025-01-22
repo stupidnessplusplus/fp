@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
+    <PackageReference Include="FluentResults" Version="3.16.0" />
   </ItemGroup>
 
   <ItemGroup>

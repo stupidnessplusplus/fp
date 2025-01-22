@@ -1,39 +1,42 @@
-﻿using System.Drawing;
+﻿using FluentResults;
+using Microsoft.Extensions.Logging;
+using System.Drawing;
 using TagsCloudCreation.Configs;
 
 namespace TagsCloudCreation.TagsDrawers;
 
 public class TagsDrawer : ITagsDrawer
 {
-    private readonly ITagsColorConfig colorConfig;
+    private readonly TagsColorConfig colorConfig;
 
-    public TagsDrawer(ITagsColorConfig colorConfig)
+    public TagsDrawer(TagsColorConfig colorConfig)
     {
         ArgumentNullException.ThrowIfNull(colorConfig);
 
         this.colorConfig = colorConfig;
     }
 
-    public Bitmap Draw(IList<TagDrawing> tagsWithSettings)
+    public Result<Bitmap> Draw(IList<TagDrawing> tagDrawings)
     {
-        ArgumentNullException.ThrowIfNull(tagsWithSettings);
-
-        var imageSize = GetImageSizeToFitTags(tagsWithSettings);
-        Bitmap image;
-
-        try
+        if (tagDrawings == null)
         {
-            image = new Bitmap(imageSize.Width, imageSize.Height);
-        }
-        catch (Exception ex)
-        {
-            throw new ArgumentException($"Unable to create image of size {imageSize}.", ex);
+            return Result.Fail("Tags collection is null.");
         }
 
-        FillBackground(image, colorConfig.BackgroundColor);
-        DrawTags(image, tagsWithSettings);
-
-        return image;
+        var imageSize = GetImageSizeToFitTags(tagDrawings);
+        return Result
+            .Try(
+                () => new Bitmap(imageSize.Width, imageSize.Height),
+                _ => new Error($"Unable to create image of size {imageSize}."))
+            .Bind(image => Result
+                .Try(() =>
+                {
+                    FillBackground(image, colorConfig.BackgroundColor);
+                    DrawTags(image, tagDrawings);
+                    return image;
+                }))
+            .LogIfSuccess(nameof(TagsDrawer), "Image is drawn.", LogLevel.Information)
+            .LogIfFailed(nameof(TagsDrawer), null, LogLevel.Error);
     }
 
     private Size GetImageSizeToFitTags(IList<TagDrawing> tags)

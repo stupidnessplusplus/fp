@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Autofac" Version="8.2.0" />
+    <PackageReference Include="FluentResults" Version="3.16.0" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.5.1" />
   </ItemGroup>
 

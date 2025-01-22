@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using FluentResults;
+using System.Drawing;
 using TagsCloudCreation.Configs;
 
 namespace TagsCloudCreation.WordSizesGetters;
@@ -7,10 +8,10 @@ public class FrequencyProportionalWordSizesGetter : IWordSizesGetter, IDisposabl
 {
     private readonly Image emptyImage = new Bitmap(1, 1);
 
-    private readonly IWordSizesGetterConfig wordSizesGetterConfig;
-    private readonly ITagsFontConfig tagsFontConfig;
+    private readonly WordSizesGetterConfig wordSizesGetterConfig;
+    private readonly TagsFontConfig tagsFontConfig;
 
-    public FrequencyProportionalWordSizesGetter(IWordSizesGetterConfig wordSizesGetterConfig, ITagsFontConfig tagsFontConfig)
+    public FrequencyProportionalWordSizesGetter(WordSizesGetterConfig wordSizesGetterConfig, TagsFontConfig tagsFontConfig)
     {
         ArgumentNullException.ThrowIfNull(wordSizesGetterConfig);
         ArgumentNullException.ThrowIfNull(tagsFontConfig);
@@ -24,9 +25,12 @@ public class FrequencyProportionalWordSizesGetter : IWordSizesGetter, IDisposabl
         emptyImage.Dispose();
     }
 
-    public virtual UnplacedTag[] GetSizes(IList<string> words)
+    public virtual Result<UnplacedTag[]> GetSizes(IList<string> words)
     {
-        ArgumentNullException.ThrowIfNull(words);
+        if (words == null)
+        {
+            return Result.Fail("Words collection is null.");
+        }
 
         return words
             .GroupBy(word => word)

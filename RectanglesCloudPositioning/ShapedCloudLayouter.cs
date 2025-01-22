@@ -1,4 +1,5 @@
-﻿using RectanglesCloudPositioning.Configs;
+﻿using FluentResults;
+using RectanglesCloudPositioning.Configs;
 using System.Drawing;
 
 namespace RectanglesCloudPositioning;
@@ -14,7 +15,7 @@ public class ShapedCloudLayouter : ICloudLayouter
     private IEnumerator<Point> pointsEnumerator;
     private int radius;
 
-    public ShapedCloudLayouter(IRectanglesPositioningConfig config)
+    public ShapedCloudLayouter(RectanglesPositioningConfig config)
         : this(config.Center, config.RaysCount, config.RadiusEquation)
     {
     }
@@ -30,11 +31,8 @@ public class ShapedCloudLayouter : ICloudLayouter
         pointsEnumerator = new[] { center }.AsEnumerable().GetEnumerator();
     }
 
-    public Rectangle PutNextRectangle(Size rectangleSize)
+    Rectangle ICloudLayouter.PutNextRectangleOrThrow(Size rectangleSize)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rectangleSize.Width);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rectangleSize.Height);
-
         var rectangle = GetRectangleToPut(rectangleSize);
         rectangles.Add(rectangle);
         return rectangle;

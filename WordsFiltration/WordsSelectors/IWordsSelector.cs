@@ -1,6 +1,8 @@
-﻿namespace WordsFiltration.WordsSelectors;
+﻿using FluentResults;
+
+namespace WordsFiltration.WordsSelectors;
 
 public interface IWordsSelector
 {
-    public IEnumerable<string> Select(IEnumerable<string> words);
+    public Result<IEnumerable<string>> Select(IEnumerable<string> words);
 }

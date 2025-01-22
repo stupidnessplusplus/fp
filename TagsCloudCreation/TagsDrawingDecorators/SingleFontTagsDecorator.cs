@@ -1,21 +1,25 @@
-﻿using TagsCloudCreation.Configs;
+﻿using FluentResults;
+using TagsCloudCreation.Configs;
 
 namespace TagsCloudCreation.TagsDrawingDecorators;
 
 public class SingleFontTagsDecorator : ITagsDrawingDecorator
 {
-    private readonly ITagsFontConfig fontConfig;
+    private readonly TagsFontConfig fontConfig;
 
-    public SingleFontTagsDecorator(ITagsFontConfig fontConfig)
+    public SingleFontTagsDecorator(TagsFontConfig fontConfig)
     {
         ArgumentNullException.ThrowIfNull(fontConfig);
 
         this.fontConfig = fontConfig;
     }
 
-    public TagDrawing[] Decorate(IList<TagDrawing> tags)
+    public Result<TagDrawing[]> Decorate(IList<TagDrawing> tags)
     {
-        ArgumentNullException.ThrowIfNull(tags);
+        if (tags == null)
+        {
+            return Result.Fail("Tags collection is null.");
+        }
 
         return tags
             .Select(tag => tag with
@@ -23,6 +27,8 @@ public class SingleFontTagsDecorator : ITagsDrawingDecorator
                 FontName = fontConfig.FontName,
                 FontStyle = fontConfig.FontStyle,
             })
-            .ToArray();
+            .ToArray()
+            .ToResult()
+            .WithSuccess($"Set tags font to {fontConfig.FontName} {fontConfig.FontStyle}.");
     }
 }

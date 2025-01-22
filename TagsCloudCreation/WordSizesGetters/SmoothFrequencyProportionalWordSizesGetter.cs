@@ -1,19 +1,23 @@
-﻿using TagsCloudCreation.Configs;
+﻿using FluentResults;
+using TagsCloudCreation.Configs;
 
 namespace TagsCloudCreation.WordSizesGetters;
 
 public class SmoothFrequencyProportionalWordSizesGetter : FrequencyProportionalWordSizesGetter
 {
     public SmoothFrequencyProportionalWordSizesGetter(
-        IWordSizesGetterConfig wordSizesGetterConfig,
-        ITagsFontConfig tagsFontConfig)
+        WordSizesGetterConfig wordSizesGetterConfig,
+        TagsFontConfig tagsFontConfig)
         : base(wordSizesGetterConfig, tagsFontConfig)
     {
     }
 
-    public override UnplacedTag[] GetSizes(IList<string> words)
+    public override Result<UnplacedTag[]> GetSizes(IList<string> words)
     {
-        ArgumentNullException.ThrowIfNull(words);
+        if (words == null)
+        {
+            return Result.Fail("Words collection is null.");
+        }
 
         return words
             .GroupBy(word => word)

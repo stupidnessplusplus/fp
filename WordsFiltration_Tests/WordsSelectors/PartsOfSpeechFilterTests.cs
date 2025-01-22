@@ -1,5 +1,4 @@
-﻿using FakeItEasy;
-using FluentAssertions;
+﻿using FluentAssertions;
 using WordsFiltration;
 using WordsFiltration.Configs;
 using WordsFiltration.WordsSelectors;
@@ -11,11 +10,7 @@ internal class PartsOfSpeechFilterTests : WordsSelectorTests
     [SetUp]
     public void SetUp()
     {
-        var wordsSelectionConfig = A.Fake<IWordsSelectionConfig>();
-
-        A.CallTo(() => wordsSelectionConfig.IncludedPartsOfSpeech)
-            .Returns([PartOfSpeech.A, PartOfSpeech.S, PartOfSpeech.V]);
-
+        var wordsSelectionConfig = new WordsSelectionConfig(null, [PartOfSpeech.A, PartOfSpeech.S, PartOfSpeech.V]);
         wordSelector = new PartsOfSpeechFilter(wordsSelectionConfig);
     }
 
@@ -34,6 +29,7 @@ internal class PartsOfSpeechFilterTests : WordsSelectorTests
 
         var actualWords = wordSelector.Select(words);
 
-        actualWords.Should().BeEquivalentTo(expectedWords, options => options.WithStrictOrdering());
+        actualWords.IsSuccess.Should().BeTrue();
+        actualWords.Value.Should().BeEquivalentTo(expectedWords, options => options.WithStrictOrdering());
     }
 }

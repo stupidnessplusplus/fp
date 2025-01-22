@@ -19,10 +19,10 @@ internal abstract class TagsDrawingDecoratorTests
     protected ITagsDrawingDecorator tagsDecorator = null!;
 
     [Test]
-    public void Decorate_ThrowsException_WhenTagsListIsNull()
+    public void Decorate_Fails_WhenTagsListIsNull()
     {
-        var decorate = () => tagsDecorator.Decorate(null!);
-        decorate.Should().Throw<ArgumentNullException>();
+        var decoratedTags = tagsDecorator.Decorate(null!);
+        decoratedTags.IsSuccess.Should().BeFalse();
     }
 
     [Test]
@@ -30,8 +30,9 @@ internal abstract class TagsDrawingDecoratorTests
     {
         var decoratedTags = tagsDecorator.Decorate(tags);
 
-        decoratedTags.Should().NotBeSameAs(tags);
-        decoratedTags.Should()
+        decoratedTags.IsSuccess.Should().BeTrue();
+        decoratedTags.Value.Should().NotBeSameAs(tags);
+        decoratedTags.Value.Should()
             .AllSatisfy(decoratedTag => tags.Should()
                 .AllSatisfy(tag => decoratedTag.Should().NotBeSameAs(tag)));
     }
@@ -41,8 +42,9 @@ internal abstract class TagsDrawingDecoratorTests
     {
         var decoratedTags = tagsDecorator.Decorate(tags);
 
-        decoratedTags.Should().HaveCount(tags.Length);
-        decoratedTags.Zip(tags).Should()
+        decoratedTags.IsSuccess.Should().BeTrue();
+        decoratedTags.Value.Should().HaveCount(tags.Length);
+        decoratedTags.Value.Zip(tags).Should()
             .AllSatisfy(tagsPair => tagsPair.First.Word.Should().Be(tagsPair.Second.Word));
     }
 }

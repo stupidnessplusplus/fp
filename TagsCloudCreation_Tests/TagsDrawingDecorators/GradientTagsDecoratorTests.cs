@@ -12,15 +12,12 @@ internal class GradientTagsDecoratorTests : TagsDrawingDecoratorTests
     private static readonly Color configMainColor = Color.FromArgb(0, 3, 6);
     private static readonly Color configSecondaryColor = Color.FromArgb(3, 3, 3);
 
-    private ITagsColorConfig tagsColorConfig;
+    private TagsColorConfig tagsColorConfig;
 
     [SetUp]
     public void SetUp()
     {
-        tagsColorConfig = A.Fake<ITagsColorConfig>();
-        A.CallTo(() => tagsColorConfig.MainColor).Returns(configMainColor);
-        A.CallTo(() => tagsColorConfig.SecondaryColor).Returns(configSecondaryColor);
-
+        tagsColorConfig = new TagsColorConfig(configMainColor, configSecondaryColor, default);
         tagsDecorator = new GradientTagsDecorator(tagsColorConfig);
     }
 
@@ -42,10 +39,10 @@ internal class GradientTagsDecoratorTests : TagsDrawingDecoratorTests
             Color.FromArgb(3, 3, 3),
         };
 
-        var decoratedTagsColors = tagsDecorator
-            .Decorate(tags)
-            .Select(tag => tag.Color);
+        var decoratedTagsResult = tagsDecorator.Decorate(tags);
 
+        decoratedTagsResult.IsSuccess.Should().BeTrue();
+        var decoratedTagsColors = decoratedTagsResult.Value.Select(tag => tag.Color);
         decoratedTagsColors.Should().BeEquivalentTo(expectedColors, options => options.WithStrictOrdering());
     }
 }

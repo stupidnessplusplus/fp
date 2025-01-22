@@ -1,4 +1,6 @@
 ﻿using System.Text.RegularExpressions;
+using FluentResults;
+using Microsoft.Extensions.Logging;
 using WordsFiltration.WordsSelectors;
 
 namespace WordsFiltration;
@@ -16,18 +18,37 @@ public class TextSplitter
         this.wordsSelectors = wordsSelectors;
     }
 
-    public string[] SplitToWords(string text)
+    public Result<string[]> SplitToWords(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
+        if (text == null)
+        {
+            return Result
+                .Fail("Text is null.")
+                .Log(nameof(TextSplitter), null, LogLevel.Error);
+        }
 
         text = text.ToLower();
 
-        var words = wordSplitRegex
+        var wordsResult = wordSplitRegex
             .Split(text)
-            .Where(word => !string.IsNullOrEmpty(word) && !word.All(ch => ch == '-'));
+            .Where(word => !string.IsNullOrEmpty(word) && !word.All(ch => ch == '-'))
+            .ToResult()
+            .Log(nameof(TextSplitter), "Text was split into words.", LogLevel.Information);
 
-        return wordsSelectors
-            .Aggregate(words, (words, wordsSelector) => wordsSelector.Select(words))
-            .ToArray();
+        foreach (var wordsSelector in wordsSelectors)
+        {
+            var wordsSelectorName = wordsSelector.GetType().Name;
+            wordsResult = wordsSelector
+                .Select(wordsResult.Value)
+                .LogIfSuccess(wordsSelectorName, null, LogLevel.Information)
+                .LogIfFailed(wordsSelectorName, null, LogLevel.Error);
+
+            if (wordsResult.IsFailed)
+            {
+                return Result.Fail("Unable to split text to words.");
+            }
+        }
+
+        return Result.Ok(wordsResult.Value.ToArray());
     }
 }

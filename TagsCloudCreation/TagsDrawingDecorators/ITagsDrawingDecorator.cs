@@ -1,6 +1,8 @@
-﻿namespace TagsCloudCreation.TagsDrawingDecorators;
+﻿using FluentResults;
+
+namespace TagsCloudCreation.TagsDrawingDecorators;
 
 public interface ITagsDrawingDecorator
 {
-    public TagDrawing[] Decorate(IList<TagDrawing> tags);
+    public Result<TagDrawing[]> Decorate(IList<TagDrawing> tags);
 }

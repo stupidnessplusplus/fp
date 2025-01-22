@@ -1,8 +1,9 @@
-﻿using System.Drawing;
+﻿using FluentResults;
+using System.Drawing;
 
 namespace TagsCloudCreation.TagsDrawers;
 
 public interface ITagsDrawer
 {
-    public Bitmap Draw(IList<TagDrawing> tags);
+    public Result<Bitmap> Draw(IList<TagDrawing> tags);
 }

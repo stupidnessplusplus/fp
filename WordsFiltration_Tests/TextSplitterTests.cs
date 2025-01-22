@@ -1,5 +1,6 @@
 using FakeItEasy;
 using FluentAssertions;
+using FluentResults;
 using WordsFiltration;
 using WordsFiltration.WordsSelectors;
 
@@ -23,10 +24,10 @@ internal class TextSplitterTests
     }
 
     [Test]
-    public void SplitToWords_ThrowsException_WhenTextIsNull()
+    public void SplitToWords_Fails_WhenTextIsNull()
     {
-        var splitToWords = () => textSplitter.SplitToWords(null!);
-        splitToWords.Should().Throw<ArgumentNullException>();
+        var actualWords = textSplitter.SplitToWords(null!);
+        actualWords.IsSuccess.Should().BeFalse();
     }
 
     [TestCaseSource(nameof(GetTextWithWhiteSpaceAndPunctuationTestCases))]
@@ -34,7 +35,8 @@ internal class TextSplitterTests
     {
         var actualWords = textSplitter.SplitToWords(text);
 
-        actualWords.Should().BeEquivalentTo(expectedWords);
+        actualWords.IsSuccess.Should().BeTrue();
+        actualWords.Value.Should().BeEquivalentTo(expectedWords);
     }
 
     [Test]
@@ -45,7 +47,8 @@ internal class TextSplitterTests
 
         var actualWords = textSplitter.SplitToWords(text);
 
-        actualWords.Should().BeEquivalentTo(expectedWords);
+        actualWords.IsSuccess.Should().BeTrue();
+        actualWords.Value.Should().BeEquivalentTo(expectedWords);
     }
 
     [Test]
@@ -60,14 +63,15 @@ internal class TextSplitterTests
 
         A.CallTo(() => wordSelector1.Select(null!))
             .WithAnyArguments()
-            .ReturnsLazily(obj => ((IEnumerable<string>)obj.Arguments[0]!).Select(word => word + "1"));
+            .ReturnsLazily(obj => ((IEnumerable<string>)obj.Arguments[0]!).Select(word => word + "1").ToResult());
         A.CallTo(() => wordSelector2.Select(null!))
             .WithAnyArguments()
-            .ReturnsLazily(obj => ((IEnumerable<string>)obj.Arguments[0]!).Select(word => word + "2"));
+            .ReturnsLazily(obj => ((IEnumerable<string>)obj.Arguments[0]!).Select(word => word + "2").ToResult());
 
         var actualWords = textSplitter.SplitToWords(text);
 
-        actualWords.Should().BeEquivalentTo(expectedWords, options => options.WithStrictOrdering());
+        actualWords.IsSuccess.Should().BeTrue();
+        actualWords.Value.Should().BeEquivalentTo(expectedWords, options => options.WithStrictOrdering());
         A.CallTo(() => wordSelector1.Select(null!))
             .WithAnyArguments()
             .MustHaveHappenedOnceExactly();

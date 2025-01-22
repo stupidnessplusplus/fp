@@ -1,11 +1,13 @@
 using System.Drawing;
-using FakeItEasy;
 using FluentAssertions;
 using NUnit.Framework.Interfaces;
+using RectanglesCloudPositioning;
 using RectanglesCloudPositioning.Configs;
 using TagsCloudApp;
 using TagsCloudApp.Configs;
 using TagsCloudCreation.Configs;
+using TagsCloudCreation.TagsDrawingDecorators;
+using TagsCloudCreation.WordSizesGetters;
 using WordsFiltration;
 using WordsFiltration.Configs;
 
@@ -21,12 +23,12 @@ internal class AppTests
 
     private App app;
 
-    private IDrawingAlgorithmsConfig algorithmsConfig;
-    private IWordsSelectionConfig wordsSelectionConfig;
-    private IWordSizesGetterConfig wordSizesGetterConfig;
-    private IRectanglesPositioningConfig rectanglesPositioningConfig;
-    private ITagsColorConfig colorConfig;
-    private ITagsFontConfig fontConfig;
+    private DrawingAlgorithmsConfig algorithmsConfig;
+    private WordsSelectionConfig wordsSelectionConfig;
+    private WordSizesGetterConfig wordSizesGetterConfig;
+    private RectanglesPositioningConfig rectanglesPositioningConfig;
+    private TagsColorConfig colorConfig;
+    private TagsFontConfig fontConfig;
 
     private string inputText = null!;
     private Bitmap outputImage = null!;
@@ -56,32 +58,19 @@ internal class AppTests
     {
         app = new App(() => inputText, image => outputImage = image);
 
-        algorithmsConfig = A.Fake<IDrawingAlgorithmsConfig>();
-        A.CallTo(() => algorithmsConfig.WordSizingMethod).Returns(WordSizingMethod.SmoothFrequency);
-        A.CallTo(() => algorithmsConfig.RectanglesLayouter).Returns(RectanglesLayouter.Circle);
-        A.CallTo(() => algorithmsConfig.DrawingSettings).Returns([]);
+        algorithmsConfig = new DrawingAlgorithmsConfig(
+            typeof(SmoothFrequencyProportionalWordSizesGetter),
+            typeof(SpiralCircularCloudLayouter),
+            []);
 
-        wordsSelectionConfig = A.Fake<IWordsSelectionConfig>();
-        A.CallTo(() => wordsSelectionConfig.ExcludedWords).Returns(null);
-        A.CallTo(() => wordsSelectionConfig.IncludedPartsOfSpeech).Returns(null);
-
-        wordSizesGetterConfig = A.Fake<IWordSizesGetterConfig>();
-        A.CallTo(() => wordSizesGetterConfig.MinSize).Returns(40);
-        A.CallTo(() => wordSizesGetterConfig.Scale).Returns(1);
-
-        rectanglesPositioningConfig = A.Fake<IRectanglesPositioningConfig>();
-        A.CallTo(() => rectanglesPositioningConfig.Center).Returns(Point.Empty);
-        A.CallTo(() => rectanglesPositioningConfig.RaysCount).Returns(360);
-        A.CallTo(() => rectanglesPositioningConfig.RadiusEquation).Returns(null!);
-
-        colorConfig = A.Fake<ITagsColorConfig>();
-        A.CallTo(() => colorConfig.BackgroundColor).Returns(Color.FromArgb(255, 255, 255));
-        A.CallTo(() => colorConfig.MainColor).Returns(Color.FromArgb(0, 0, 0));
-        A.CallTo(() => colorConfig.SecondaryColor).Returns(default);
-
-        fontConfig = A.Fake<ITagsFontConfig>();
-        A.CallTo(() => fontConfig.FontName).Returns("Arial");
-        A.CallTo(() => fontConfig.FontStyle).Returns(FontStyle.Regular);
+        wordsSelectionConfig = new WordsSelectionConfig(null, null);
+        wordSizesGetterConfig = new WordSizesGetterConfig(40, 1);
+        rectanglesPositioningConfig = new RectanglesPositioningConfig(Point.Empty, 360, null);
+        colorConfig = new TagsColorConfig(
+            Color.FromArgb(0, 0, 0),
+            Color.FromArgb(0, 0, 0),
+            Color.FromArgb(255, 255, 255));
+        fontConfig = new TagsFontConfig("Arial", FontStyle.Regular);
     }
 
     [TearDown]
@@ -122,9 +111,12 @@ internal class AppTests
         inputText = "abc abc abc";
         var expectedSize = new Size(expectedWidth, expectedHeight);
 
-        A.CallTo(() => algorithmsConfig.WordSizingMethod).Returns(WordSizingMethod.Frequency);
-        A.CallTo(() => wordSizesGetterConfig.MinSize).Returns(minSize);
-        A.CallTo(() => wordSizesGetterConfig.Scale).Returns(scale);
+        algorithmsConfig = algorithmsConfig with
+        {
+            WordSizesGetterType = typeof(FrequencyProportionalWordSizesGetter),
+        };
+
+        wordSizesGetterConfig = new WordSizesGetterConfig(minSize, scale);
 
         app.Run(algorithmsConfig, wordsSelectionConfig, wordSizesGetterConfig,
             rectanglesPositioningConfig, colorConfig, fontConfig);
@@ -137,10 +129,15 @@ internal class AppTests
     {
         inputText = "abc def ghi";
 
-        A.CallTo(() => algorithmsConfig.DrawingSettings).Returns([DrawingSetting.Gradient]);
-        A.CallTo(() => colorConfig.BackgroundColor).Returns(Color.FromArgb(63, 31, 63));
-        A.CallTo(() => colorConfig.MainColor).Returns(Color.FromArgb(255, 191, 127));
-        A.CallTo(() => colorConfig.SecondaryColor).Returns(Color.FromArgb(127, 63, 255));
+        algorithmsConfig = algorithmsConfig with
+        {
+            TagsDecoratorTypes = [typeof(GradientTagsDecorator)],
+        };
+
+        colorConfig = new TagsColorConfig(
+            Color.FromArgb(255, 191, 127),
+            Color.FromArgb(127, 63, 255),
+            Color.FromArgb(63, 31, 63));
 
         app.Run(algorithmsConfig, wordsSelectionConfig, wordSizesGetterConfig,
             rectanglesPositioningConfig, colorConfig, fontConfig);
@@ -154,8 +151,7 @@ internal class AppTests
     {
         inputText = "abc";
 
-        A.CallTo(() => fontConfig.FontName).Returns("Constantia");
-        A.CallTo(() => fontConfig.FontStyle).Returns(FontStyle.Strikeout);
+        fontConfig = new TagsFontConfig("Constantia", FontStyle.Strikeout);
 
         app.Run(algorithmsConfig, wordsSelectionConfig, wordSizesGetterConfig,
             rectanglesPositioningConfig, colorConfig, fontConfig);
@@ -171,7 +167,7 @@ internal class AppTests
         inputText = word;
         var expectedSize = new Size(1, 1);
 
-        A.CallTo(() => wordsSelectionConfig.ExcludedWords).Returns([word]);
+        wordsSelectionConfig = new WordsSelectionConfig([word], null);
 
         app.Run(algorithmsConfig, wordsSelectionConfig, wordSizesGetterConfig,
             rectanglesPositioningConfig, colorConfig, fontConfig);
@@ -184,7 +180,7 @@ internal class AppTests
     {
         inputText = "сиреневая сирень";
 
-        A.CallTo(() => wordsSelectionConfig.IncludedPartsOfSpeech).Returns([PartOfSpeech.S]);
+        wordsSelectionConfig = new WordsSelectionConfig(null, [PartOfSpeech.S]);
 
         app.Run(algorithmsConfig, wordsSelectionConfig, wordSizesGetterConfig,
             rectanglesPositioningConfig, colorConfig, fontConfig);
@@ -198,8 +194,15 @@ internal class AppTests
     {
         inputText = "abc def ghi jkl mno pqr stu vwx yza bcd efg hij klm nop qrs tuv wxy";
 
-        A.CallTo(() => algorithmsConfig.RectanglesLayouter).Returns(RectanglesLayouter.Shaped);
-        A.CallTo(() => rectanglesPositioningConfig.RadiusEquation).Returns(angle => Math.Sin(5 * angle + Math.PI));
+        algorithmsConfig = algorithmsConfig with
+        {
+            RectanglesLayouterType = typeof(ShapedCloudLayouter),
+        };
+
+        rectanglesPositioningConfig = rectanglesPositioningConfig with
+        {
+            RadiusEquation = angle => Math.Sin(5 * angle + Math.PI),
+        };
 
         app.Run(algorithmsConfig, wordsSelectionConfig, wordSizesGetterConfig,
             rectanglesPositioningConfig, colorConfig, fontConfig);
